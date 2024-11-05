@@ -20,28 +20,54 @@ def extractText(file):
 
     model = genai.GenerativeModel("gemini-1.5-flash")
     result = model.generate_content(
-        [img, "\n\n", """Extract the text in image in an JSON and NIK, Name, Date of Birth and Address Which consists of Alamat, RT/RW, Kelurahan/Desa and Kecamatan from array into JSON with this format with the newlines and without any additional text and without ```json``` and always try to fill every line
-        {
+        [img, "\n\n", """  
+        Ekstrak teks pada gambar dan NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON dan tanpa teks tambahan dan tanpa ```json```
+         Alamat adalah teks di bawah jenis kelamin dan golongan darah dan di atas RT/RW, jangan mengambil dari Tempat/Tanggal lahir
+         Usahakan untuk mencocokan alamat dengan desa atau kecamatan yang ada di Indonesia yang terdekat
+         Alamat disusun sesuai dengan urutan berikut pada gambar:
+          Alamat, RT/RW, Kelurahan/Desa, Kecamatan
+         {
           "NIK": "0000000000000000",
-          "Name": "ABC",
-          "Date of Birth": "01-02-2000",
-          "Alamat": {"Alamat":"ABC", "RT/RW": "001/003", "Kelurahan/Desa": "ABC", "Kecamatan": "ABC"}
+          "Nama": "ABC",
+          "Tanggal Lahir": "01-02-2000",
+          "Alamat": {"Alamat": "ABC", "RT/RW": "001/003", "Kelurahan/Desa": "ABC", "Kecamatan": "ABC"}
           }
-        Give only this JSON if information is not clear
-        {"message":"Gambar tidak jelas"}
+        Berikan hanya JSON ini jika gambarnya buram
+        {"message": "Gambar bukan KTP"}
+        Berikan hanya JSON ini jika gambar tersebut bukan kartu identitas
+        {"message": "Gambar bukan KTP"}
         """]
     )
-
+    
+        
     json_ktp = json.loads(result.text)
+    
     print(json_ktp)
+
+    if "NIK" in json_ktp.keys() and len(json_ktp["NIK"]) != 16:
+      print("a")
+      res = model.generate_content(
+        [img, "\n\n", """NIK is always 16 digits, write only the NIK out without any extra text"""]
+      )
+      print(res.text)
+      json_ktp["NIK"] = res.text.strip()
+      
+    
+    if json_ktp["NIK"][0] != "1":
+      json_ktp["NIK"] = "1" + json_ktp["NIK"][1:]
+    print(json_ktp["NIK"])
+       
+
+    if None in json_ktp.values() or ("NIK" in json_ktp.keys() and len(json_ktp["NIK"]) != 16): 
+        return {"message": "Gambar tidak jelas"}
 
     return json_ktp
 
 @app.post("/extract_text/")
 def extract_text_ktp(file: UploadFile = File(...)):
   if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File is not an image")
-  try:
-    return extractText(file)
-  except Exception as e:
-    raise HTTPException(status_code=500, detail="Error processing image") from e
+    raise HTTPException(status_code=400, detail="File is not an image")
+  #try:
+  return extractText(file)
+  #except Exception as e:
+    #raise HTTPException(status_code=400, detail="Image processing failed")
