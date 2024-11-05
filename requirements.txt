@@ -1,0 +1,6 @@
+google.generativeai
+Pillow
+fastapi
+json
+os
+ultralytics
