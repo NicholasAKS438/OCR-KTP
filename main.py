@@ -3,32 +3,40 @@ from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
 import json
 import os
-
+from PIL import Image, ImageDraw
+import matplotlib.pyplot as plt
+import cv2
+import numpy as np
 
 from dotenv import load_dotenv
 from ultralytics import YOLO
-modela = YOLO('.\\best.pt')  # load a pretrained YOLO detection model
-
+model_detect = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\KTP_Detection.pt')  # load a pretrained YOLO detection model
+model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\KTP_Segmentation.pt')
+model_genai = genai.GenerativeModel("gemini-1.5-flash")
 
 
 load_dotenv()
 
 app = FastAPI()
 API_KEY = os.getenv("API_KEY")
-def extractText(file):
-    
-    
-    
-    
+def extractText(file):    
     genai.configure(api_key=API_KEY)
 
     img = Image.open(file.file)
 
-    res = modela(img)
-    print(res[0].boxes)
+    res_detect = model_detect.predict(source=img, save=False, task = "detect", show=False, conf=0.8)
+    print(res_detect[0].boxes)
+    if len(res_detect[0].boxes.conf) == 0:
+      raise HTTPException(status_code=400, detail="Gambar bukanlah KTP")
 
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    result = model.generate_content(
+    res_segment = model_segment.predict(source=img, save=False, task = "segment", show=False, conf=0.8)
+    print(res_segment[0].masks.xy)
+    masks = res_segment[0].masks.xy
+
+    mask_array = np.array(masks, dtype=np.int32)
+    mask_array = mask_array.reshape((-1, 1, 2))  # Reshape for OpenCV
+
+    result = model_genai.generate_content(
         [img, "\n\n", """ 
         
         Ekstrak teks pada gambar dan NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON dan tanpa teks tambahan dan tanpa ```json```
@@ -56,7 +64,7 @@ def extractText(file):
 
     if "NIK" in json_ktp.keys() and len(json_ktp["NIK"]) != 16:
       print("a")
-      res = model.generate_content(
+      res = model_genai.generate_content(
         [img, "\n\n", """NIK is always 16 digits, write only the NIK out without any extra text"""]
       )
       print(res.text)
