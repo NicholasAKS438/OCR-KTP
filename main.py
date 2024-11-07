@@ -52,25 +52,7 @@ def extractText(file):
         quad_points = approx_quad.reshape(-1, 2)
         print("Approximated Quadrilateral Points:", quad_points)
 
-    # Display the results
-    import matplotlib.pyplot as plt
-    plt.imshow(img)
-
-    # Convex hull
-    hull_points = hull.reshape(-1, 2)
-    plt.plot(np.append(hull_points[:, 0], hull_points[0, 0]),
-            np.append(hull_points[:, 1], hull_points[0, 1]), color="orange", label="Convex Hull")
-
-    # Approximated quadrilateral
-    if len(approx_quad) == 4:
-        quad_points = approx_quad.reshape(-1, 2)
-        plt.plot(np.append(quad_points[:, 0], quad_points[0, 0]),
-                np.append(quad_points[:, 1], quad_points[0, 1]), color="red", label="Approximated Quadrilateral")
-
-    plt.gca().invert_yaxis()
-    plt.legend()
-    plt.title("Approximate Quadrilateral from Points")
-    plt.show()
+    
 
     result = model_genai.generate_content(
         [img, "\n\n", """ 
