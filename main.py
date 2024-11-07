@@ -38,6 +38,39 @@ def extractText(file):
     mask_array = np.array(masks, dtype=np.int32)
     mask_array = mask_array.reshape((-1, 1, 2))  # Reshape for OpenCV
 
+    hull = cv2.convexHull(mask_array)
+
+    # Approximate the convex hull to a quadrilateral
+    epsilon = 0.02 * cv2.arcLength(hull, True)  # Adjust the epsilon for more or less approximation
+    approx_quad = cv2.approxPolyDP(hull, epsilon, True)
+
+    # If the approximation has more than 4 points, adjust or retry with a different epsilon
+    if len(approx_quad) != 4:
+        print("Failed to approximate to quadrilateral; current approximation has", len(approx_quad), "points.")
+    else:
+        # Unpack the points if the approximation succeeded in yielding a quadrilateral
+        quad_points = approx_quad.reshape(-1, 2)
+        print("Approximated Quadrilateral Points:", quad_points)
+
+    # Display the results
+    import matplotlib.pyplot as plt
+    plt.imshow(img)
+
+    # Convex hull
+    hull_points = hull.reshape(-1, 2)
+    plt.plot(np.append(hull_points[:, 0], hull_points[0, 0]),
+            np.append(hull_points[:, 1], hull_points[0, 1]), color="orange", label="Convex Hull")
+
+    # Approximated quadrilateral
+    if len(approx_quad) == 4:
+        quad_points = approx_quad.reshape(-1, 2)
+        plt.plot(np.append(quad_points[:, 0], quad_points[0, 0]),
+                np.append(quad_points[:, 1], quad_points[0, 1]), color="red", label="Approximated Quadrilateral")
+
+    plt.gca().invert_yaxis()
+    plt.legend()
+    plt.title("Approximate Quadrilateral from Points")
+    plt.show()
 
     result = model_genai.generate_content(
         [img, "\n\n", """ 
