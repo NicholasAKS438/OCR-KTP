@@ -3,15 +3,17 @@ from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
 import json
 import os
-from PIL import Image, ImageDraw
-import matplotlib.pyplot as plt
+from PIL import Image
+import numpy as np
+import pytesseract
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 from dotenv import load_dotenv
 from ultralytics import YOLO
 model_detect = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\KTP_Detection.pt')  # load a pretrained YOLO detection model
-model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\KTP_Segmentation.pt')
+model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\best.pt')
 model_genai = genai.GenerativeModel("gemini-1.5-flash")
 
 
@@ -26,7 +28,7 @@ def extractText(file):
 
     res_detect = model_detect.predict(source=img, save=False, task = "detect", show=False, conf=0.8)
     print(res_detect[0].boxes)
-    if len(res_detect[0].boxes.conf) == 0:
+    if len(res_detect[0].boxes.conf) != 1:
       raise HTTPException(status_code=400, detail="Gambar bukanlah KTP")
 
     res_segment = model_segment.predict(source=img, save=False, task = "segment", show=False, conf=0.8)
@@ -35,6 +37,7 @@ def extractText(file):
 
     mask_array = np.array(masks, dtype=np.int32)
     mask_array = mask_array.reshape((-1, 1, 2))  # Reshape for OpenCV
+
 
     result = model_genai.generate_content(
         [img, "\n\n", """ 
