@@ -9,6 +9,7 @@ import pytesseract
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 from dotenv import load_dotenv
 from ultralytics import YOLO
@@ -25,6 +26,7 @@ def extractText(file):
     genai.configure(api_key=API_KEY)
 
     img = Image.open(file.file)
+    img_array = np.array(img)
 
     res_detect = model_detect.predict(source=img, save=False, task = "detect", show=False, conf=0.8)
     print(res_detect[0].boxes)
@@ -50,16 +52,45 @@ def extractText(file):
     else:
         # Unpack the points if the approximation succeeded in yielding a quadrilateral
         quad_points = approx_quad.reshape(-1, 2)
+        quad_points = np.array(quad_points, dtype=np.float32)
         print("Approximated Quadrilateral Points:", quad_points)
+
+        width_top = np.linalg.norm(quad_points[1] - quad_points[0])
+        width_bottom = np.linalg.norm(quad_points[2] - quad_points[3])
+        height_left = np.linalg.norm(quad_points[3] - quad_points[0])
+        height_right = np.linalg.norm(quad_points[2] - quad_points[1])
+
+        # Use the maximum of the widths and heights as the side length for the square
+
+        square_size = int(max(width_top, width_bottom, height_left, height_right))
+        print(square_size)
+        # Define the destination points to form a square
+        square_pts = np.float32([
+            [0, 0],                 # Top-left corner
+            [400, 0],   # Top-right corner
+            [400, 611],  # Bottom-right corner
+            [0, 611]    # Bottom-left corner
+        ])
+
+        # Compute the perspective transform matrix
+        M = cv2.getPerspectiveTransform(quad_points, square_pts)
+
+        dst = cv2.warpPerspective(img_array, M, (400,611))
+        dst = cv2.rotate(dst, cv2.ROTATE_90_CLOCKWISE)
+    
+    output_path = 'output_image.jpg'
+    cv2.imwrite(output_path, dst)
+    print(f"Image saved as {output_path}")
+
+    dst = Image.fromarray(dst)
 
     
 
     result = model_genai.generate_content(
-        [img, "\n\n", """ 
+        [dst, "\n\n", """ 
         
-        Ekstrak teks pada gambar dan NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON dan tanpa teks tambahan dan tanpa ```json```
+        Ekstrak teks pada gambar dan NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON di bawah tanpa tambahan ```json```
          Alamat adalah teks di bawah jenis kelamin dan golongan darah dan di atas RT/RW, jangan mengambil dari Tempat/Tanggal lahir
-         Usahakan untuk mencocokan alamat dengan desa atau kecamatan yang ada di Indonesia yang terdekat
          Alamat disusun sesuai dengan urutan berikut pada gambar:
           Alamat, RT/RW, Kelurahan/Desa, Kecamatan
          {
@@ -68,13 +99,10 @@ def extractText(file):
           "Tanggal Lahir": "01-02-2000",
           "Alamat": {"Alamat": "ABC", "RT/RW": "001/003", "Kelurahan/Desa": "ABC", "Kecamatan": "ABC"}
           }
-        Berikan hanya JSON ini jika gambarnya buram
-        {"message": "Gambar buram"}
-        Berikan hanya JSON ini jika gambar tersebut bukan KTP
-        {"message": "Gambar bukan KTP"}
         """]
     )
     
+    print(result.text)
         
     json_ktp = json.loads(result.text)
     
