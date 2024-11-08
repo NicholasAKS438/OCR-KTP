@@ -25,24 +25,7 @@ def extractText(file):
     genai.configure(api_key=API_KEY)
 
     img = Image.open(file.file)
-    img_array = np.array(img)
-
-    #read img
-
-    image = cv2.cvtColor(img_array, cv2.IMREAD_GRAYSCALE)
-
-  
-
-    # Increase contrast
-    alpha = 1.5  # Simple contrast control
-    adjusted_image = cv2.convertScaleAbs(image, alpha=alpha)
-    plt.figure(figsize=(6, 6))
-    plt.imshow(adjusted_image, cmap="gray")  # Use 'gray' colormap to visualize grayscale image
-    plt.axis("off")  # Turn off axis numbers and ticks
-    plt.title("Grayscale Image")
-    plt.show()
-    
-
+    img_array = np.array(img)    
     
     res_detect = model_detect.predict(source=img, save=False, task = "detect", show=False, conf=0.8)
     if len(res_detect[0].boxes.conf) != 1:
