@@ -3,19 +3,16 @@ from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
 import json
 import os
-from PIL import Image
 import numpy as np
-import pytesseract
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-import math
 
 from dotenv import load_dotenv
 from ultralytics import YOLO
 model_detect = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\KTP_Detection.pt')  # load a pretrained YOLO detection model
 model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\best.pt')
 model_genai = genai.GenerativeModel("gemini-1.5-flash")
+
 
 
 load_dotenv()
@@ -29,12 +26,10 @@ def extractText(file):
     img_array = np.array(img)
 
     res_detect = model_detect.predict(source=img, save=False, task = "detect", show=False, conf=0.8)
-    print(res_detect[0].boxes)
     if len(res_detect[0].boxes.conf) != 1:
       raise HTTPException(status_code=400, detail="Gambar bukanlah KTP")
 
     res_segment = model_segment.predict(source=img, save=False, task = "segment", show=False, conf=0.8)
-    print(res_segment[0].masks.xy)
     masks = res_segment[0].masks.xy
 
     mask_array = np.array(masks, dtype=np.int32)
@@ -76,23 +71,17 @@ def extractText(file):
         M = cv2.getPerspectiveTransform(quad_points, square_pts)
 
         dst = cv2.warpPerspective(img_array, M, (400,611))
-        dst = cv2.rotate(dst, cv2.ROTATE_90_CLOCKWISE)
     
     output_path = 'output_image.jpg'
     cv2.imwrite(output_path, dst)
     print(f"Image saved as {output_path}")
 
     dst = Image.fromarray(dst)
-
-    
-
     result = model_genai.generate_content(
         [dst, "\n\n", """ 
         
         Ekstrak teks pada gambar dan NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON di bawah tanpa tambahan ```json```
-         Alamat adalah teks di bawah jenis kelamin dan golongan darah dan di atas RT/RW, jangan mengambil dari Tempat/Tanggal lahir
-         Alamat disusun sesuai dengan urutan berikut pada gambar:
-          Alamat, RT/RW, Kelurahan/Desa, Kecamatan
+         Usahakan untuk tetap mengekstrak teks yang ada, terutama nama dan tanggal lahir
          {
           "NIK": "0000000000000000",
           "Nama": "ABC",
@@ -117,9 +106,6 @@ def extractText(file):
       json_ktp["NIK"] = res.text.strip()
       
     
-    if "NIK" in json_ktp.keys() and json_ktp["NIK"][0] != "1":
-      json_ktp["NIK"] = "1" + json_ktp["NIK"][1:]
-      print(json_ktp["NIK"])
        
 
     if None in json_ktp.values() or ("NIK" in json_ktp.keys() and len(json_ktp["NIK"]) != 16): 
