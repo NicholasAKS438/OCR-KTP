@@ -6,9 +6,16 @@
 
 <h2 style="font-weight: 800;">🚀 How to launch</h2>
 
+**First launch**
 ```console
 $ git clone https://github.com/NicholasAKS438/OCR-KTP.git
-$ pip install -r requirements.txt
+$ ./setup_env.bat
+$ fastapi dev main.py
+```
+
+**Consequent launch**
+```console
+$ ./call_env.bat
 $ fastapi dev main.py
 ```
 ---
