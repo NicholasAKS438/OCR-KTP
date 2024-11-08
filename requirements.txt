@@ -1,6 +1,8 @@
 google.generativeai
 Pillow
 fastapi
-json
-os
 ultralytics
+numpy
+opencv-python
+python-dotenv
+fastapi[standard]

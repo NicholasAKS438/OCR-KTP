@@ -5,11 +5,6 @@ import json
 import os
 import numpy as np
 import cv2
-import numpy as np
-import pytesseract
-import matplotlib.pyplot as plt
-
-pytesseract.pytesseract.tesseract_cmd = r'C:\\Users\\NICHOLAS\\AppData\\Local\\Tesseract-OCR\\tesseract.exe'
 
 from dotenv import load_dotenv
 from ultralytics import YOLO
