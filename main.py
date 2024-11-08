@@ -1,5 +1,5 @@
 import google.generativeai as genai
-from PIL import Image, ImageOps
+from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
 import json
 import os
@@ -105,7 +105,7 @@ def extractText(file):
       json_ktp["NIK"] = res.text.strip()
 
     if None in json_ktp.values() or ("NIK" in json_ktp.keys() and len(json_ktp["NIK"]) != 16): 
-        return {"message": "Gambar tidak jelas"}
+        raise HTTPException(status_code=400, detail="Gambar tidak jelas")
 
     return json_ktp
 
