@@ -74,9 +74,6 @@ def extractText(file):
 
         dst = cv2.warpPerspective(img_array, M, (400,611))
     
-    output_path = 'output_image.jpg'
-    cv2.imwrite(output_path, adjusted_image)
-    print(f"Image saved as {output_path}")
 
     dst = Image.fromarray(dst)
     result = model_genai.generate_content(
@@ -106,9 +103,6 @@ def extractText(file):
       )
       print(res.text)
       json_ktp["NIK"] = res.text.strip()
-      
-    
-       
 
     if None in json_ktp.values() or ("NIK" in json_ktp.keys() and len(json_ktp["NIK"]) != 16): 
         return {"message": "Gambar tidak jelas"}
