@@ -1,19 +1,21 @@
 import google.generativeai as genai
-from PIL import Image
+from PIL import Image, ImageOps
 from fastapi import FastAPI, File, UploadFile, HTTPException
 import json
 import os
 import numpy as np
 import cv2
 import numpy as np
+import pytesseract
+import matplotlib.pyplot as plt
+
+pytesseract.pytesseract.tesseract_cmd = r'C:\\Users\\NICHOLAS\\AppData\\Local\\Tesseract-OCR\\tesseract.exe'
 
 from dotenv import load_dotenv
 from ultralytics import YOLO
 model_detect = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\KTP_Detection.pt')  # load a pretrained YOLO detection model
 model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\best.pt')
 model_genai = genai.GenerativeModel("gemini-1.5-flash")
-
-
 
 load_dotenv()
 
@@ -25,6 +27,23 @@ def extractText(file):
     img = Image.open(file.file)
     img_array = np.array(img)
 
+    #read img
+
+    image = cv2.cvtColor(img_array, cv2.IMREAD_GRAYSCALE)
+
+  
+
+    # Increase contrast
+    alpha = 1.5  # Simple contrast control
+    adjusted_image = cv2.convertScaleAbs(image, alpha=alpha)
+    plt.figure(figsize=(6, 6))
+    plt.imshow(adjusted_image, cmap="gray")  # Use 'gray' colormap to visualize grayscale image
+    plt.axis("off")  # Turn off axis numbers and ticks
+    plt.title("Grayscale Image")
+    plt.show()
+    
+
+    
     res_detect = model_detect.predict(source=img, save=False, task = "detect", show=False, conf=0.8)
     if len(res_detect[0].boxes.conf) != 1:
       raise HTTPException(status_code=400, detail="Gambar bukanlah KTP")
@@ -73,7 +92,7 @@ def extractText(file):
         dst = cv2.warpPerspective(img_array, M, (400,611))
     
     output_path = 'output_image.jpg'
-    cv2.imwrite(output_path, dst)
+    cv2.imwrite(output_path, adjusted_image)
     print(f"Image saved as {output_path}")
 
     dst = Image.fromarray(dst)
