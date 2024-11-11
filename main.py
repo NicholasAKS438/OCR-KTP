@@ -41,35 +41,35 @@ def extractText(file):
 
   # If the approximation has more than 4 points, adjust or retry with a different epsilon
   if len(approx_quad) != 4:
-      print("Failed to approximate to quadrilateral; current approximation has", len(approx_quad), "points.")
+    print("Failed to approximate to quadrilateral; current approximation has", len(approx_quad), "points.")
   else:
-      # Unpack the points if the approximation succeeded in yielding a quadrilateral
-      quad_points = approx_quad.reshape(-1, 2)
-      quad_points = np.array(quad_points, dtype=np.float32)
-      print("Approximated Quadrilateral Points:", quad_points)
+    # Unpack the points if the approximation succeeded in yielding a quadrilateral
+    quad_points = approx_quad.reshape(-1, 2)
+    quad_points = np.array(quad_points, dtype=np.float32)
+    print("Approximated Quadrilateral Points:", quad_points)
 
-      width_top = np.linalg.norm(quad_points[1] - quad_points[0])
-      width_bottom = np.linalg.norm(quad_points[2] - quad_points[3])
-      height_left = np.linalg.norm(quad_points[3] - quad_points[0])
-      height_right = np.linalg.norm(quad_points[2] - quad_points[1])
+    width_top = np.linalg.norm(quad_points[1] - quad_points[0])
+    width_bottom = np.linalg.norm(quad_points[2] - quad_points[3])
+    height_left = np.linalg.norm(quad_points[3] - quad_points[0])
+    height_right = np.linalg.norm(quad_points[2] - quad_points[1])
 
-      # Use the maximum of the widths and heights as the side length for the square
+    # Use the maximum of the widths and heights as the side length for the square
 
-      square_size = int(max(width_top, width_bottom, height_left, height_right))
-      print(square_size)
-      # Define the destination points to form a square
-      square_pts = np.float32([
-          [0, 0],                 # Top-left corner
-          [400, 0],   # Top-right corner
-          [400, 611],  # Bottom-right corner
-          [0, 611]    # Bottom-left corner
-      ])
+    square_size = int(max(width_top, width_bottom, height_left, height_right))
+    print(square_size)
+    # Define the destination points to form a square
+    square_pts = np.float32([
+      [0, 0],                 # Top-left corner
+      [400, 0],   # Top-right corner
+      [400, 611],  # Bottom-right corner
+      [0, 611]    # Bottom-left corner
+    ])
 
-      # Compute the perspective transform matrix
-      M = cv2.getPerspectiveTransform(quad_points, square_pts)
+    # Compute the perspective transform matrix
+    M = cv2.getPerspectiveTransform(quad_points, square_pts)
 
-      dst = cv2.warpPerspective(img_array, M, (400,611))
-  
+    dst = cv2.warpPerspective(img_array, M, (400,611))
+
 
 
   output_path = 'C:\\OCR-KTP\\OCRR\\OCR-KTP\\test.jpg'
