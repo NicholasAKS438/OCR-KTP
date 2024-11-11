@@ -29,6 +29,7 @@ def extractText(file):
   res_segment = model_segment.predict(source=img, save=False, task = "segment", show=False, conf=0.8)
   masks = res_segment[0].masks.xy
 
+  
   mask_array = np.array(masks, dtype=np.int32)
   mask_array = mask_array.reshape((-1, 1, 2))  # Reshape for OpenCV
 
@@ -76,6 +77,7 @@ def extractText(file):
   cv2.imwrite(output_path, dst)
   print(f"Image saved as {output_path}")
   dst = Image.fromarray(dst)
+  
   result = model_genai.generate_content(
     [dst, "\n\n", """ 
   
@@ -96,11 +98,11 @@ def extractText(file):
   
   print(json_ktp)
 
-  if None in json_ktp.values(): 
+  if None in json_ktp.values() or "null" in json_ktp.values(): 
     return {"detail":"Gambar tidak jelas"}
 
   if ("NIK" in json_ktp.keys() and len(json_ktp["NIK"]) != 16):
-    json_ktp["message"] = "NIK lebih dari 16"
+    json_ktp["message"] = "NIK bukan 16 angka"
   return json_ktp
 
 @app.post("/extract_text/")
@@ -108,6 +110,10 @@ def extract_text_ktp(file: UploadFile = File(...)):
   if not file.content_type.startswith("image/"):
     raise HTTPException(status_code=400, detail="File is not an image")
   try:
-    return extractText(file)
+    res = extractText(file)
+    if "detail" in res.keys():
+      raise HTTPException(status_code=400, detail=res["detail"])
+    else:
+      return res
   except Exception as e:
-    raise HTTPException(status_code=400, detail=e)
+    raise HTTPException(status_code=400, detail=str(e))
