@@ -22,7 +22,7 @@ def extractText(file):
 
     img = Image.open(file.file)
     img_array = np.array(img)    
-
+    """"
     res_detect = model_detect.predict(source=img, save=False, task = "detect", show=False, conf=0.8)
     if len(res_detect[0].boxes.conf) != 1:
         raise HTTPException(status_code=400, detail="Gambar bukanlah KTP")
@@ -33,6 +33,7 @@ def extractText(file):
 
     mask_array = np.array(masks, dtype=np.int32)
     mask_array = mask_array.reshape((-1, 1, 2))  # Reshape for OpenCV
+    """""
 
     # Load image, grayscale, Gaussian blur, Otsu's threshold
 
@@ -112,11 +113,11 @@ def extractText(file):
 def extract_text_ktp(file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File is not an image")
-    try:
-        res = extractText(file)
-        if "detail" in res.keys():
-            raise HTTPException(status_code=400, detail=res["detail"])
-        else:
-            return res
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    #try:
+    res = extractText(file)
+    if "detail" in res.keys():
+        raise HTTPException(status_code=400, detail=res["detail"])
+    else:
+        return res
+    #except Exception as e:
+     #   raise HTTPException(status_code=400, detail=str(e))
