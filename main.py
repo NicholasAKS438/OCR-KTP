@@ -78,11 +78,11 @@ def extractText(file):
 def extract_text_ktp(file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File is not an image")
-    #try:
-    res = extractText(file)
-    if "detail" in res.keys():
-        raise HTTPException(status_code=400, detail=res["detail"])
-    else:
-        return res
-    #except Exception as e:
-    #    raise HTTPException(status_code=400, detail=str(e))
+    try:
+        res = extractText(file)
+        if "detail" in res.keys():
+            raise HTTPException(status_code=400, detail=res["detail"])
+        else:
+            return res
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

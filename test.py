@@ -50,14 +50,15 @@ def extractText(file):
     print(f"Image saved as {output_path}")
 
     dst = Image.fromarray(dst)
-    
+    end = time.time()
+    print("Image segmentation time elapsed: " + str(end - start))
+    start = time.time()
     result = model_genai.generate_content(
     [dst, "\n\n", """ 
-
     Ekstrak teks pada gambar dan NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON di bawah tanpa tambahan ```json```
-        NIK hanya berjumlah 16 digit, tidak lebih dan tidak kurang, pastikan tidak melakukan output angka yang duplikat
+        NIK hanya berjumlah 16 digit, tidak lebih dan tidak kurang, baca teks lagi jika NIK yang dibaca oleh AI tidak mencapai 16 digit, ulangi sampai NIK mencapai 16 digit
         {
-        "NIK": "0000000000000000",
+        "NIK": "1234567890111111",
         "Nama": "ABC",
         "Tanggal Lahir": "01-02-2000",
         "Alamat": {"Alamat": "ABC", "RT/RW": "001/003", "Kelurahan/Desa": "ABC", "Kecamatan": "ABC"}
@@ -65,9 +66,18 @@ def extractText(file):
     """]
     )
 
-    print(result.usage_metadata)
-    billing = (result.usage_metadata.candidates_token_count*4800/1000000) + (result.usage_metadata.prompt_token_count*1200/1000000)
-    json_ktp = json.loads(result.text)
+    text = result.text
+
+    if (result.text[:7] == "```json"):
+        text = text[8:len(text)-3]
+
+
+    print(text)
+    input_price = 1200
+    output_price = 4800
+    billing = (result.usage_metadata.candidates_token_count*input_price/1000000) + (result.usage_metadata.prompt_token_count*output_price/1000000)
+    print("Billing amount: " + str(billing))
+    json_ktp = json.loads(text)
 
     if None in json_ktp.values() or "null" in json_ktp.values(): 
         return {"detail":"Gambar tidak jelas"}
@@ -75,7 +85,7 @@ def extractText(file):
     if ("NIK" in json_ktp.keys() and len(json_ktp["NIK"]) != 16):
         json_ktp["message"] = "NIK bukan 16 angka"
     end = time.time()
-    print(end - start)
+    print("Gen AI time elapsed: " + str(end - start))
     return json_ktp
 
 
@@ -83,11 +93,11 @@ def extractText(file):
 def extract_text_ktp(file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File is not an image")
-    try:
-        res = extractText(file)
-        if "detail" in res.keys():
-            raise HTTPException(status_code=400, detail=res["detail"])
-        else:
-            return res
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    #try:
+    res = extractText(file)
+    if "detail" in res.keys():
+        raise HTTPException(status_code=400, detail=res["detail"])
+    else:
+        return res
+    #except Exception as e:
+    #    raise HTTPException(status_code=400, detail=str(e))
