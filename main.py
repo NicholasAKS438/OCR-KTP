@@ -48,8 +48,8 @@ def extractText(file):
 
     result = model_genai.generate_content(
     [dst, "\n\n", """ 
-
-    Ekstrak teks pada gambar dan NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON di bawah tanpa tambahan ```json```
+    Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
+        Tempat lahir tidak termasuk dalam tanggal lahir
         NIK hanya berjumlah 16 digit, tidak lebih dan tidak kurang, pastikan tidak melakukan output angka yang duplikat
         {
         "NIK": "0000000000000000",
@@ -59,9 +59,14 @@ def extractText(file):
         }
     """]
     )
+    text = result.text
 
-    json_ktp = json.loads(result.text)
+    if (result.text[:7] == "```json"):
+        text = text[8:len(text)-3]
 
+    json_ktp = json.loads(text)
+
+    #NOTE Remove if not every value has to be filled
     if None in json_ktp.values() or "null" in json_ktp.values(): 
         return {"detail":"Gambar tidak jelas"}
 
@@ -73,11 +78,11 @@ def extractText(file):
 def extract_text_ktp(file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File is not an image")
-    try:
-        res = extractText(file)
-        if "detail" in res.keys():
-            raise HTTPException(status_code=400, detail=res["detail"])
-        else:
-            return res
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    #try:
+    res = extractText(file)
+    if "detail" in res.keys():
+        raise HTTPException(status_code=400, detail=res["detail"])
+    else:
+        return res
+    #except Exception as e:
+    #    raise HTTPException(status_code=400, detail=str(e))
