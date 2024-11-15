@@ -70,16 +70,20 @@ def extractText(file):
     dst = contrast(dst)
 
     output_path = 'C:\\OCR-KTP\\OCRR\\OCR-KTP'
+    cv2.imwrite(output_path+'/ori.jpg', img)
     cv2.imwrite(output_path+'/test.jpg', dst)
+    
     print(f"Image saved as {output_path}")
 
     dst = Image.fromarray(dst)
     end = time.time()
     print("Image segmentation time elapsed: " + str(end - start))
     start = time.time()
+    print("a")
+    
     result = model_genai.generate_content(
     [dst, "\n\n", """ 
-    Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
+    Ekstrak teks pada gambar yang lebih jelas dan lengkap. Identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
         Tempat lahir tidak termasuk dalam tanggal lahir
         Berikan null jika informasi teks blur atau susah diekstrak
         NIK hanya berjumlah 16 digit, tidak lebih dan tidak kurang, pastikan tidak melakukan output angka yang duplikat
@@ -91,11 +95,14 @@ def extractText(file):
         }
     """]
     )
+    
 
     text = result.text
 
     if (result.text[:7] == "```json"):
         text = text[8:len(text)-3]
+    if (result.text[-1] == "`"):
+        text = text[:-1]
 
 
     print(text)
@@ -111,6 +118,7 @@ def extractText(file):
         json_ktp["message"] = "NIK bukan 16 angka"
     end = time.time()
     print("Gen AI time elapsed: " + str(end - start))
+    
     return json_ktp
 
 
