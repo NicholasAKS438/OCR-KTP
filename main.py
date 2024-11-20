@@ -35,6 +35,14 @@ def contrast(img):
   img2=cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)  # convert from LAB to BGR
   return img2
 
+def blur_detection(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    fm = cv2.Laplacian(gray, cv2.CV_64F).var()
+    if fm < 300:
+        return "Blurry"
+    return "Not Blurry"
+
+
 def flatten_image(array_img, mask_array):
     hull = cv2.convexHull(mask_array)
 
@@ -66,13 +74,15 @@ def extractText(file):
     dst = flatten_image(dst,mask_array)
     
     dst = contrast(dst)
-        
 
+    if (blur_detection(dst) == "Blurry"):
+        return {"detail":"Gambar blur, kirim ulang gambar"}
+    
     dst = Image.fromarray(dst)
-    print("a")
+
     result = model_genai.generate_content(
     [dst, "\n\n", """ 
-    Ekstrak teks pada gambar yang lebih jelas dan lengkap dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
+    Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
         Tempat lahir tidak termasuk dalam tanggal lahir
         Berikan null jika informasi teks blur atau susah diekstrak
         NIK hanya berjumlah 16 digit, tidak lebih dan tidak kurang, pastikan tidak melakukan output angka yang duplikat
@@ -88,7 +98,7 @@ def extractText(file):
     print(text)
 
     if (result.text[:7] == "```json"):
-        text = text[8:len(text)-3]
+        text = text[8:len(text)-4]
 
     json_ktp = json.loads(text)
 

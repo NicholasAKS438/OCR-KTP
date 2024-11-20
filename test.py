@@ -50,6 +50,15 @@ def flatten_image(array_img, mask_array):
         array_img = four_point_transform(array_img, approx_quad.reshape(4, 2))
     return array_img
 
+
+
+def blur_detection(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    fm = cv2.Laplacian(gray, cv2.CV_64F).var()
+    if fm < 300:
+        return "Blurry"
+    return "Not Blurry"
+
 def extractText(file):    
     start = time.time()
     genai.configure(api_key=API_KEY)
@@ -69,6 +78,9 @@ def extractText(file):
     
     dst = contrast(dst)
 
+    if (blur_detection(dst) == "Blurry"):
+        return {"detail":"Gambar blur, kirim ulang gambar"}
+
     output_path = 'C:\\OCR-KTP\\OCRR\\OCR-KTP'
     cv2.imwrite(output_path+'/ori.jpg', img)
     cv2.imwrite(output_path+'/test.jpg', dst)
@@ -82,7 +94,7 @@ def extractText(file):
     print("a")
     
     result = model_genai.generate_content(
-    [dst, "\n\n", """ 
+    [dst,img, "\n\n", """ 
     Ekstrak teks pada gambar yang lebih jelas dan lengkap. Identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
         Tempat lahir tidak termasuk dalam tanggal lahir
         Berikan null jika informasi teks blur atau susah diekstrak
@@ -98,11 +110,10 @@ def extractText(file):
     
 
     text = result.text
+    print(text)
 
     if (result.text[:7] == "```json"):
-        text = text[8:len(text)-3]
-    if (result.text[-1] == "`"):
-        text = text[:-1]
+        text = text[8:len(text)-4]
 
 
     print(text)

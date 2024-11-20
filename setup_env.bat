@@ -1,5 +1,5 @@
 @echo off
-virtualenv venv --python=python3.12
+python -m venv venv
 call venv\Scripts\activate
 pip install -r requirements.txt
 cmd /k
