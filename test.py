@@ -1,5 +1,5 @@
 import google.generativeai as genai
-from PIL import Image
+from PIL import Image, ImageFilter
 from fastapi import FastAPI, File, UploadFile, HTTPException
 import json
 import os
@@ -55,7 +55,8 @@ def flatten_image(array_img, mask_array):
 def blur_detection(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     fm = cv2.Laplacian(gray, cv2.CV_64F).var()
-    if fm < 300:
+    print(fm)
+    if fm < 200:
         return "Blurry"
     return "Not Blurry"
 
@@ -64,6 +65,7 @@ def extractText(file):
     genai.configure(api_key=API_KEY)
 
     img = Image.open(file.file)
+    
     dst = np.array(img)    
 
     res_segment = model_segment.predict(source=img, save=False, task = "segment", show=False, conf=0.8)
@@ -77,13 +79,14 @@ def extractText(file):
     dst = flatten_image(dst,mask_array)
     
     dst = contrast(dst)
-
-    if (blur_detection(dst) == "Blurry"):
-        return {"detail":"Gambar blur, kirim ulang gambar"}
+    
+    
 
     output_path = 'C:\\OCR-KTP\\OCRR\\OCR-KTP'
     cv2.imwrite(output_path+'/ori.jpg', img)
     cv2.imwrite(output_path+'/test.jpg', dst)
+    if (blur_detection(dst) == "Blurry"):
+        return {"detail":"Gambar blur, kirim ulang gambar"}
     
     print(f"Image saved as {output_path}")
 
@@ -94,8 +97,8 @@ def extractText(file):
     print("a")
     
     result = model_genai.generate_content(
-    [dst,img, "\n\n", """ 
-    Ekstrak teks pada gambar yang lebih jelas dan lengkap. Identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
+    [dst, "\n\n", """ 
+    Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
         Tempat lahir tidak termasuk dalam tanggal lahir
         Berikan null jika informasi teks blur atau susah diekstrak
         NIK hanya berjumlah 16 digit, tidak lebih dan tidak kurang, pastikan tidak melakukan output angka yang duplikat
@@ -103,7 +106,7 @@ def extractText(file):
         "NIK": "0000000000000000",
         "Nama": "ABC",
         "Tanggal Lahir": "01-02-2000",
-        "Alamat": {"Alamat": "ABC", "RT/RW": "001/003", "Kelurahan/Desa": "ABC", "Kecamatan": "ABC"},
+        "Alamat": {"Alamat": "ABC", "RT/RW": "001/003", "Kelurahan/Desa": "ABC", "Kecamatan": "ABC"}
         }
     """]
     )
