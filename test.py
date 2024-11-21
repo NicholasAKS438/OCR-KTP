@@ -85,8 +85,8 @@ def extractText(file):
     output_path = 'C:\\OCR-KTP\\OCRR\\OCR-KTP'
     cv2.imwrite(output_path+'/ori.jpg', img)
     cv2.imwrite(output_path+'/test.jpg', dst)
-    if (blur_detection(dst) == "Blurry"):
-        return {"detail":"Gambar blur, kirim ulang gambar"}
+    #if (blur_detection(dst) == "Blurry"):
+    #    return {"detail":"Gambar blur, kirim ulang gambar"}
     
     print(f"Image saved as {output_path}")
 
