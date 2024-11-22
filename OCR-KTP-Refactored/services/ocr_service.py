@@ -10,6 +10,8 @@ import io
 from google.cloud import storage
 
 class OCRService:
+    BUCKET_NAME = "ktp-stash"
+
     def __init__(self, model_segment, model_genai):
         self.model_segment = model_segment
         self.model_genai = model_genai
@@ -67,7 +69,7 @@ class OCRService:
             img_byte_array.seek(0)  # Rewind the file pointer to the beginning
             
             client = storage.Client()
-            bucket = client.bucket("ktp-stash")
+            bucket = client.bucket(self.BUCKET_NAME)
             blob = bucket.blob("ktp/"+destination_blob_name)
             
             # Upload file
