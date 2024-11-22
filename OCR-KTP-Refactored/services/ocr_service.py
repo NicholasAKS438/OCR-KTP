@@ -1,16 +1,8 @@
-import google.generativeai as genai
 from PIL import Image
-from fastapi import FastAPI, File, UploadFile, HTTPException
 import json
-import os
 import numpy as np
 import cv2
 from imutils.perspective import four_point_transform
-
-
-from dotenv import load_dotenv
-from ultralytics import YOLO
-
 
 class OCRService:
     def __init__(self, model_segment, model_genai):
@@ -108,7 +100,7 @@ class OCRService:
 
     def perform_ocr(self, image):
         """Extract text from an image."""
-        #try:
-        return self.extract_text(image)
-        #except Exception as e:
-            #raise RuntimeError(f"Error processing image: {e}")
+        try:
+            return self.extract_text(image)
+        except Exception as e:
+            return {"detail" : str(e)}
