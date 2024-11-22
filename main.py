@@ -6,12 +6,20 @@ import os
 import numpy as np
 import cv2
 from imutils.perspective import four_point_transform
+from vertexai.generative_models import GenerativeModel, Part
+from vertexai.tuning import sft
+import os
+import re
 
 from dotenv import load_dotenv
 from ultralytics import YOLO
 
 model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\KTP_Segmentation.pt')
 model_genai = genai.GenerativeModel("gemini-1.5-flash")
+
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\OCR-KTP\OCRR\OCR-KTP\credentials.json'
+sft_tuning_job = sft.SupervisedTuningJob("projects/67912531469/locations/us-central1/tuningJobs/6663904508663300096")
+tuned_model = GenerativeModel(sft_tuning_job.tuned_model_endpoint_name)
 
 load_dotenv()
 
@@ -79,9 +87,11 @@ def extractText(file):
         return {"detail":"Gambar blur, kirim ulang gambar"}
     
     dst = Image.fromarray(dst)
-
-    result = model_genai.generate_content(
-    [dst,""" 
+    image_file = Part.from_uri(
+    "gs://ktp-stash/ktp/test.jpg", "image/jpeg"
+    )   
+    result = tuned_model.generate_content(
+    [image_file,""" 
     Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan teks dan ```json```
         Tempat lahir tidak termasuk dalam tanggal lahir
         Berikan null jika informasi teks blur atau susah diekstrak
@@ -99,8 +109,9 @@ def extractText(file):
 
     if (result.text[:7] == "```json"):
         text = text[8:len(text)-4]
-
-    json_ktp = json.loads(text)
+    text = re.sub(r'(?<!")(\b[A-Za-z_]+\b)(?=\s*:)', r'"\1"', text)  # Fix unquoted keys
+    text = re.sub(r'(?<=:\s)([A-Za-z0-9._\- ]+)(?=,|\n|\})', r'"\1"', text)  # Fix unquoted values
+    json_ktp = json.loads(text.strip("\n"))
 
     #NOTE Remove if not every value has to be filled
     if None in json_ktp.values() or "null" in json_ktp.values() or None in json_ktp['Alamat'].values():  
@@ -114,11 +125,11 @@ def extractText(file):
 def extract_text_ktp(file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File is not an image")
-    try:
-        res = extractText(file)
-        if "detail" in res.keys():
-            raise HTTPException(status_code=400, detail=res["detail"])
-        else:
-            return res
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    #try:
+    res = extractText(file)
+    if "detail" in res.keys():
+        raise HTTPException(status_code=400, detail=res["detail"])
+    else:
+        return res
+    #except Exception as e:
+    #    raise HTTPException(status_code=400, detail=str(e))

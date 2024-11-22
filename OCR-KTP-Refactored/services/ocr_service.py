@@ -3,6 +3,10 @@ import json
 import numpy as np
 import cv2
 from imutils.perspective import four_point_transform
+from vertexai.generative_models import GenerativeModel, Part
+from vertexai.tuning import sft
+import os
+import re
 
 class OCRService:
     def __init__(self, model_segment, model_genai):
@@ -68,8 +72,13 @@ class OCRService:
         
         dst = Image.fromarray(dst)
 
+        #TODO Insert image into bucket for prediction
+        image_file = Part.from_uri(
+            "gs://ktp-stash/ktp/test.jpg", "image/jpeg"
+        )   
+
         result = self.model_genai.generate_content(
-        [dst,""" 
+        [image_file,""" 
         Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan teks dan ```json```
             Tempat lahir tidak termasuk dalam tanggal lahir
             Berikan null jika informasi teks blur atau susah diekstrak
@@ -87,6 +96,10 @@ class OCRService:
 
         if (result.text[:7] == "```json"):
             text = text[8:len(text)-4]
+
+        text = re.sub(r'(?<!")(\b[A-Za-z_]+\b)(?=\s*:)', r'"\1"', text)  # Fix unquoted keys
+        text = re.sub(r'(?<=:\s)([A-Za-z0-9._\- ]+)(?=,|\n|\})', r'"\1"', text)  # Fix unquoted values
+
 
         json_ktp = json.loads(text)
 
