@@ -20,6 +20,12 @@ class OCRService:
         return cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
 
     def contrast(self,img):
+        """
+        Increase contrast of image
+        
+        Args:
+            img : A Matlike or numpy array image
+        """
         # CLAHE (Contrast Limited Adaptive Histogram Equalization)
         clahe=cv2.createCLAHE(clipLimit=3., tileGridSize=(8,8))
 
@@ -33,6 +39,13 @@ class OCRService:
         return img2
 
     def blur_detection(self,image):
+        """
+        Check if an image is blurry
+        
+        Args:
+            image : A Matlike or numpy array image
+        """
+
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         fm = cv2.Laplacian(gray, cv2.CV_64F).var()
         if fm < 300:
@@ -41,6 +54,13 @@ class OCRService:
 
 
     def flatten_image(self,array_img, mask_array):
+        """
+        Flattens an image to a quadrilateral based on the mask
+        
+        Args:
+            array_img: Image in array format (Matlike or numpy array)
+            mask_array: Matrix of segmentation mask by model
+        """
         hull = cv2.convexHull(mask_array)
 
         # Approximate the convex hull to a quadrilateral
@@ -59,7 +79,7 @@ class OCRService:
         Uploads a file object to Google Cloud Storage.
         
         Args:
-            file_obj: The file object to upload.
+            file: The file object to upload.
             destination_blob_name: The name of the destination file in the bucket.
         """
         try:
@@ -146,7 +166,7 @@ class OCRService:
         return json_ktp
 
     def perform_ocr(self, image):
-        """Extract text from an image."""
+        """Extract text from a KTP image."""
         try:
             return self.extract_text(image)
         except Exception as e:
