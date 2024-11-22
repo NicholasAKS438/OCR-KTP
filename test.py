@@ -65,6 +65,8 @@ def extractText(file):
     genai.configure(api_key=API_KEY)
 
     img = Image.open(file.file)
+
+    num = Image.open("C:\\Users\\NICHOLAS\\Downloads\\module.JPEG")
     
     dst = np.array(img)    
 
@@ -98,7 +100,7 @@ def extractText(file):
     
     result = model_genai.generate_content(
     [dst, "\n\n", """ 
-    Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
+    Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan teks dan ```json```
         Tempat lahir tidak termasuk dalam tanggal lahir
         Berikan null jika informasi teks blur atau susah diekstrak
         NIK hanya berjumlah 16 digit, tidak lebih dan tidak kurang, pastikan tidak melakukan output angka yang duplikat
