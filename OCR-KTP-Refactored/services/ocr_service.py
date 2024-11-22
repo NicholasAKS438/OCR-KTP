@@ -3,10 +3,11 @@ import json
 import numpy as np
 import cv2
 from imutils.perspective import four_point_transform
-from vertexai.generative_models import GenerativeModel, Part
+from vertexai.generative_models import GenerativeModel, Part    
 from vertexai.tuning import sft
-import os
 import re
+import io
+from google.cloud import storage
 
 class OCRService:
     def __init__(self, model_segment, model_genai):
@@ -50,7 +51,32 @@ class OCRService:
         else:
             array_img = four_point_transform(array_img, approx_quad.reshape(4, 2))
         return array_img
-
+    
+    def upload_to_gcs(self,file, destination_blob_name):
+        """
+        Uploads a file object to Google Cloud Storage.
+        
+        Args:
+            file_obj: The file object to upload.
+            destination_blob_name: The name of the destination file in the bucket.
+        """
+        try:
+            # Initialize Google Cloud Storage client
+            img_byte_array = io.BytesIO()
+            file.save(img_byte_array, format='PNG')  # Save image as PNG (can also be 'JPEG', 'BMP', etc.)
+            img_byte_array.seek(0)  # Rewind the file pointer to the beginning
+            
+            client = storage.Client()
+            bucket = client.bucket("ktp-stash")
+            blob = bucket.blob("ktp/"+destination_blob_name)
+            
+            # Upload file
+            blob.upload_from_file(img_byte_array, content_type='image/png')
+            print("aaa" + blob.public_url)
+            return blob.public_url
+        except Exception as e:
+            return {"detail" : "Error upload to Google Storage" + str(e)}
+    
     def extract_text(self,file):
         img = Image.open(file.file)
         dst = np.array(img)    
@@ -72,9 +98,15 @@ class OCRService:
         
         dst = Image.fromarray(dst)
 
+
+        gcs_filename = self.upload_to_gcs(dst, file.filename)
+        print(gcs_filename)
+
+
+
         #TODO Insert image into bucket for prediction
         image_file = Part.from_uri(
-            "gs://ktp-stash/ktp/test.jpg", "image/jpeg"
+            "gs://ktp-stash/ktp/" + file.filename, "image/jpeg"
         )   
 
         result = self.model_genai.generate_content(
