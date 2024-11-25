@@ -8,9 +8,9 @@ from vertexai.tuning import sft
 import re
 import io
 from google.cloud import storage
+import os
 
 class OCRService:
-    BUCKET_NAME = "ktp-stash"
 
     def __init__(self, model_segment, model_genai):
         self.model_segment = model_segment
@@ -74,7 +74,7 @@ class OCRService:
             array_img = four_point_transform(array_img, approx_quad.reshape(4, 2))
         return array_img
     
-    def upload_to_gcs(self,file, destination_blob_name):
+    def upload_to_gcs(self,file, destination_blob_name, bucket_name):
         """
         Uploads a file object to Google Cloud Storage.
         
@@ -89,7 +89,8 @@ class OCRService:
             img_byte_array.seek(0)  # Rewind the file pointer to the beginning
             
             client = storage.Client()
-            bucket = client.bucket(self.BUCKET_NAME)
+            print(bucket_name)
+            bucket = client.bucket(bucket_name)
             blob = bucket.blob("ktp/"+destination_blob_name)
             
             # Upload file
@@ -97,7 +98,16 @@ class OCRService:
             print("aaa" + blob.public_url)
             return blob.public_url
         except Exception as e:
-            return {"detail" : "Error upload to Google Storage" + str(e)}
+            return {"detail" : "Error upload to Google Storage. " + str(e)}
+    
+    def format_text(self,text):
+        if (text[:7] == "```json"):
+            text = text[8:len(text)-4]
+
+        text = re.sub(r'(?<!")(\b[A-Za-z_]+\b)(?=\s*:)', r'"\1"', text)  # Fix unquoted keys
+        text = re.sub(r'(?<=:\s)([A-Za-z0-9._\- ]+)(?=,|\n|\})', r'"\1"', text)  # Fix unquoted values
+
+        return text
     
     def extract_text(self,file):
         img = Image.open(file.file)
@@ -120,46 +130,23 @@ class OCRService:
         
         dst = Image.fromarray(dst)
 
-
-        gcs_filename = self.upload_to_gcs(dst, file.filename)
+        gcs_filename = self.upload_to_gcs(dst, file.filename, os.getenv("BUCKET"))
         print(gcs_filename)
 
-
-
-        #TODO Insert image into bucket for prediction
+        #TODO ENV
         image_file = Part.from_uri(
-            "gs://ktp-stash/ktp/" + file.filename, "image/jpeg"
+           "gs://" + os.getenv("BUCKET") + "/ktp/" + file.filename, "image/jpeg"
         )   
 
         result = self.model_genai.generate_content(
-        [image_file,""" 
-        Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan teks dan ```json```
-            Tempat lahir tidak termasuk dalam tanggal lahir
-            Berikan null jika informasi teks blur atau susah diekstrak
-            NIK hanya berjumlah 16 digit, tidak lebih dan tidak kurang, pastikan tidak melakukan output angka yang duplikat
-            {
-            "NIK": "0000000000000000",
-            "Nama": "ABC",
-            "Tanggal Lahir": "01-02-2000",
-            "Alamat": {"Alamat": "ABC", "RT/RW": "001/003", "Kelurahan/Desa": "ABC", "Kecamatan": "ABC"}
-            }
-        """]
+        [image_file,os.getenv("PROMPT")]
         )
         text = result.text
         print(text)
-
-        if (result.text[:7] == "```json"):
-            text = text[8:len(text)-4]
-
-        text = re.sub(r'(?<!")(\b[A-Za-z_]+\b)(?=\s*:)', r'"\1"', text)  # Fix unquoted keys
-        text = re.sub(r'(?<=:\s)([A-Za-z0-9._\- ]+)(?=,|\n|\})', r'"\1"', text)  # Fix unquoted values
-
-
+        #Buat function formatting
+        text = self.format_text(text)
+        
         json_ktp = json.loads(text)
-
-        #NOTE Remove if not every value has to be filled
-        if None in json_ktp.values() or "null" in json_ktp.values() or None in json_ktp['Alamat'].values():  
-            return {"detail":"Gambar tidak jelas"}
 
         if ("NIK" in json_ktp.keys() and len(json_ktp["NIK"]) != 16):
             json_ktp["message"] = "NIK bukan 16 angka"

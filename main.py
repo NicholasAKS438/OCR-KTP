@@ -65,7 +65,7 @@ def flatten_image(array_img, mask_array):
         array_img = four_point_transform(array_img, approx_quad.reshape(4, 2))
     return array_img
 
-def extractText(file):    
+def extractText(file):
     genai.configure(api_key=API_KEY)
 
     img = Image.open(file.file)
