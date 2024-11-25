@@ -131,7 +131,8 @@ class OCRService:
         dst = Image.fromarray(dst)
 
         gcs_filename = self.upload_to_gcs(dst, file.filename, os.getenv("BUCKET"))
-        print(gcs_filename)
+        if isinstance(gcs_filename,dict):
+            return gcs_filename
 
         #TODO ENV
         image_file = Part.from_uri(
