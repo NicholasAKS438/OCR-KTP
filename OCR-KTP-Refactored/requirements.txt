@@ -7,3 +7,5 @@ opencv-python
 python-dotenv
 fastapi[standard]
 imutils
+vertexai
+google.cloud

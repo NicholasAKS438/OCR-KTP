@@ -3,8 +3,7 @@ import json
 import numpy as np
 import cv2
 from imutils.perspective import four_point_transform
-from vertexai.generative_models import GenerativeModel, Part    
-from vertexai.tuning import sft
+from vertexai.generative_models import Part    
 import re
 import io
 from google.cloud import storage
