@@ -9,12 +9,14 @@
 **First launch**
 ```console
 $ git clone https://github.com/NicholasAKS438/OCR-KTP.git
+$ cd OCR-KTP-Refactored
 $ ./setup_env.bat
 $ fastapi dev main.py
 ```
 
 **Consequent launch**
 ```console
+$ cd OCR-KTP-Refactored
 $ ./call_env.bat
 $ fastapi dev main.py
 ```
