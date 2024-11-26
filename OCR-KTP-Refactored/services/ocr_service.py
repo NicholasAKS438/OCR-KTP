@@ -46,7 +46,7 @@ class OCRService:
         laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
         return laplacian_var
 
-    def detect_blur_with_grid(self,image: np.ndarray, grid_size: int = 5) -> float:
+    def detect_blur_with_grid(self,image: np.ndarray, grid_size: int = 7) -> float:
         """
         Detect blur in an image by subdividing it into a grid, computing focus measures
         for each grid cell, and aggregating the results.
@@ -71,7 +71,7 @@ class OCRService:
                 focus_values.append(self.compute_focus_measure(cell))
 
         # Aggregate focus measures (e.g., using max, mean, or median)
-        aggregated_focus = np.median(focus_values)
+        aggregated_focus = np.min(focus_values)
         return aggregated_focus
 
     def blur_detection(self,image: np.ndarray, threshold: float, grid_size: int = 5) -> bool:
@@ -163,7 +163,7 @@ class OCRService:
         
         dst = self.contrast(dst)
 
-        if (self.blur_detection(dst,600) == "Blurry"):
+        if (self.blur_detection(dst,150) == "Blurry"):
             return {"detail":"Gambar blur, kirim ulang gambar"}
         
         dst = Image.fromarray(dst)

@@ -66,7 +66,6 @@ def extractText(file):
 
     img = Image.open(file.file)
 
-    num = Image.open("C:\\Users\\NICHOLAS\\Downloads\\module.JPEG")
     
     dst = np.array(img)    
 
