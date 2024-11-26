@@ -37,17 +37,58 @@ class OCRService:
         img2=cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)  # convert from LAB to BGR
         return img2
 
-    def blur_detection(self,image):
+    def compute_focus_measure(self,image: np.ndarray) -> float:
         """
-        Check if an image is blurry
+        Compute the focus measure of an image using the Laplacian variance method.
+        A higher variance indicates a sharper (less blurry) image.
+        """
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+        return laplacian_var
+
+    def detect_blur_with_grid(self,image: np.ndarray, grid_size: int = 5) -> float:
+        """
+        Detect blur in an image by subdividing it into a grid, computing focus measures
+        for each grid cell, and aggregating the results.
         
         Args:
-            image : A Matlike or numpy array image
-        """
+        - image (np.ndarray): The input image.
+        - grid_size (int): The number of subdivisions along each axis (e.g., 5x5 grid).
 
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        fm = cv2.Laplacian(gray, cv2.CV_64F).var()
-        if fm < 300:
+        Returns:
+        - float: The aggregated focus measure for the full image.
+        """
+        h, w, _ = image.shape
+        cell_h, cell_w = h // grid_size, w // grid_size
+        focus_values = []
+
+        # Subdivide the image into grid cells and compute focus measure for each cell
+        for i in range(grid_size):
+            for j in range(grid_size):
+                y1, y2 = i * cell_h, (i + 1) * cell_h
+                x1, x2 = j * cell_w, (j + 1) * cell_w
+                cell = image[y1:y2, x1:x2]
+                focus_values.append(self.compute_focus_measure(cell))
+
+        # Aggregate focus measures (e.g., using max, mean, or median)
+        aggregated_focus = np.median(focus_values)
+        return aggregated_focus
+
+    def blur_detection(self,image: np.ndarray, threshold: float, grid_size: int = 5) -> bool:
+        """
+        Determine if an image is blurry based on a threshold for the focus measure.
+
+        Args:
+        - image (np.ndarray): The input image.
+        - threshold (float): The threshold below which the image is considered blurry.
+        - grid_size (int): The number of subdivisions along each axis.
+
+        Returns:
+        - bool: True if the image is blurry, False otherwise.
+        """
+        focus_measure = self.detect_blur_with_grid(image, grid_size=grid_size)
+        print(f"Focus Measure: {focus_measure}")
+        if focus_measure < threshold:
             return "Blurry"
         return "Not Blurry"
 
@@ -88,13 +129,11 @@ class OCRService:
             img_byte_array.seek(0)  # Rewind the file pointer to the beginning
             
             client = storage.Client()
-            print(bucket_name)
             bucket = client.bucket(bucket_name)
             blob = bucket.blob("ktp/"+destination_blob_name)
             
             # Upload file
             blob.upload_from_file(img_byte_array, content_type='image/png')
-            print("aaa" + blob.public_url)
             return blob.public_url
         except Exception as e:
             return {"detail" : "Error upload to Google Storage. " + str(e)}
@@ -124,7 +163,7 @@ class OCRService:
         
         dst = self.contrast(dst)
 
-        if (self.blur_detection(dst) == "Blurry"):
+        if (self.blur_detection(dst,600) == "Blurry"):
             return {"detail":"Gambar blur, kirim ulang gambar"}
         
         dst = Image.fromarray(dst)
@@ -142,7 +181,6 @@ class OCRService:
         [image_file,os.getenv("PROMPT")]
         )
         text = result.text
-        print(text)
         #Buat function formatting
         text = self.format_text(text)
         

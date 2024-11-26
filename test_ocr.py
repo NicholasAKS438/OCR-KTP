@@ -1,106 +1,71 @@
-from PIL import Image
-import json
-import numpy as np
 import cv2
-from imutils.perspective import four_point_transform
+import numpy as np
 
-class OCRService:
-    def __init__(self, model_segment, model_genai):
-        self.model_segment = model_segment
-        self.model_genai = model_genai
+def compute_focus_measure(image: np.ndarray) -> float:
+    """
+    Compute the focus measure of an image using the Laplacian variance method.
+    A higher variance indicates a sharper (less blurry) image.
+    """
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+    return laplacian_var
 
-    def cvt_BGR2RGB(self,img):
-        return cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-
-    def contrast(self,img):
-        # CLAHE (Contrast Limited Adaptive Histogram Equalization)
-        clahe=cv2.createCLAHE(clipLimit=3., tileGridSize=(8,8))
-
-        lab=cv2.cvtColor(img, cv2.COLOR_BGR2LAB)  # convert from BGR to LAB color space
-        l,a,b=cv2.split(lab)  # split on 3 different channels
-
-        l2=clahe.apply(l)  # apply CLAHE to the L-channel
-
-        lab=cv2.merge((l2,a,b))  # merge channels
-        img2=cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)  # convert from LAB to BGR
-        return img2
-
-    def blur_detection(self,image):
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        fm = cv2.Laplacian(gray, cv2.CV_64F).var()
-        if fm < 300:
-            return "Blurry"
-        return "Not Blurry"
-
-
-    def flatten_image(self,array_img, mask_array):
-        hull = cv2.convexHull(mask_array)
-
-        # Approximate the convex hull to a quadrilateral
-        epsilon = 0.02 * cv2.arcLength(hull, True)  # Adjust the epsilon for more or less approximation
-        approx_quad = cv2.approxPolyDP(hull, epsilon, True)
-
-        # If the approximation has more than 4 points, adjust or retry with a different epsilon
-        if len(approx_quad) != 4:
-            print("Failed to approximate to quadrilateral; current approximation has", len(approx_quad), "points.")
-        else:
-            array_img = four_point_transform(array_img, approx_quad.reshape(4, 2))
-        return array_img
-
-    def extract_text(self,file):
-        img = Image.open(file.file)
-        dst = np.array(img)    
-
-        res_segment = self.model_segment.predict(source=img, save=False, task = "segment", show=False, conf=0.8)
+def detect_blur_with_grid(image: np.ndarray, grid_size: int = 5) -> float:
+    """
+    Detect blur in an image by subdividing it into a grid, computing focus measures
+    for each grid cell, and aggregating the results.
     
-        if (res_segment[0].masks == None):
-            return {"detail":"Gambar bukan KTP"}
-        masks = res_segment[0].masks.xy
-        mask_array = np.array(masks, dtype=np.int32)
-        mask_array = mask_array.reshape((-1, 1, 2))  # Reshape for OpenCV
+    Args:
+    - image (np.ndarray): The input image.
+    - grid_size (int): The number of subdivisions along each axis (e.g., 5x5 grid).
 
-        dst = self.flatten_image(dst,mask_array)
-        
-        dst = self.contrast(dst)
+    Returns:
+    - float: The aggregated focus measure for the full image.
+    """
+    h, w, _ = image.shape
+    cell_h, cell_w = h // grid_size, w // grid_size
+    focus_values = []
 
-        if (self.blur_detection(dst) == "Blurry"):
-            return {"detail":"Gambar blur, kirim ulang gambar"}
-        
-        dst = Image.fromarray(dst)
+    # Subdivide the image into grid cells and compute focus measure for each cell
+    for i in range(grid_size):
+        for j in range(grid_size):
+            y1, y2 = i * cell_h, (i + 1) * cell_h
+            x1, x2 = j * cell_w, (j + 1) * cell_w
+            cell = image[y1:y2, x1:x2]
+            focus_values.append(compute_focus_measure(cell))
 
-        result = self.model_genai.generate_content(
-        [dst,""" 
-        Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan teks dan ```json```
-            Tempat lahir tidak termasuk dalam tanggal lahir
-            Berikan null jika informasi teks blur atau susah diekstrak
-            NIK hanya berjumlah 16 digit, tidak lebih dan tidak kurang, pastikan tidak melakukan output angka yang duplikat
-            {
-            "NIK": "0000000000000000",
-            "Nama": "ABC",
-            "Tanggal Lahir": "01-02-2000",
-            "Alamat": {"Alamat": "ABC", "RT/RW": "001/003", "Kelurahan/Desa": "ABC", "Kecamatan": "ABC"}
-            }
-        """]
-        )
-        text = result.text
-        print(text)
+    # Aggregate focus measures (e.g., using max, mean, or median)
+    aggregated_focus = np.mean(focus_values)
+    return aggregated_focus
 
-        if (result.text[:7] == "```json"):
-            text = text[8:len(text)-4]
+def is_blurry(image: np.ndarray, threshold: float, grid_size: int = 5) -> bool:
+    """
+    Determine if an image is blurry based on a threshold for the focus measure.
 
-        json_ktp = json.loads(text)
+    Args:
+    - image (np.ndarray): The input image.
+    - threshold (float): The threshold below which the image is considered blurry.
+    - grid_size (int): The number of subdivisions along each axis.
 
-        #NOTE Remove if not every value has to be filled
-        if None in json_ktp.values() or "null" in json_ktp.values() or None in json_ktp['Alamat'].values():  
-            return {"detail":"Gambar tidak jelas"}
+    Returns:
+    - bool: True if the image is blurry, False otherwise.
+    """
+    focus_measure = detect_blur_with_grid(image, grid_size=grid_size)
+    print(f"Focus Measure: {focus_measure}")
+    return focus_measure < threshold
 
-        if ("NIK" in json_ktp.keys() and len(json_ktp["NIK"]) != 16):
-            json_ktp["message"] = "NIK bukan 16 angka"
-        return json_ktp
+# Example usage
+if __name__ == "__main__":
+    # Load the image
+    image_path = "C:\\OCR-KTP\\OCRR\\OCR-KTP\\ktp\\clear\\ktpIMG-20221222-WA0003_jpg.rf.40b635b596d23e517421a74e6a4ddd4d.jpg"  # Replace with your image path
+    image = cv2.imread(image_path)
 
-    def perform_ocr(self, image):
-        """Extract text from an image."""
-        try:
-            return self.extract_text(image)
-        except Exception as e:
-            return {"detail" : str(e)}
+    # Set the threshold for blurriness and check
+    blur_threshold = 100.0  # Adjust based on experiments
+    grid_size = 5  # Subdivide the image into a 5x5 grid
+    result = is_blurry(image, blur_threshold, grid_size)
+    
+    if result:
+        print("The image is blurry.")
+    else:
+        print("The image is sharp.")

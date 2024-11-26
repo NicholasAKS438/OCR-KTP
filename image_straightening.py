@@ -42,7 +42,6 @@ for filename in os.listdir(".\\ktp"):
     if (result.text[:7] == "```json"):
         text = text[8:len(text)-4]
     with open("sample.json", "a") as outfile:
-        print("a")
         json.dump({"contents": [{"role": "user", "parts": [{"fileData": {"mimeType": "image/jpeg", "fileUri": f"gs://gemini-tuning-438/ktp/{filename}"}}, {"text": """Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
         Tempat lahir tidak termasuk dalam tanggal lahir
         Berikan null jika informasi teks blur atau susah diekstrak
