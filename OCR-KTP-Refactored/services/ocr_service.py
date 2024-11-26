@@ -71,7 +71,7 @@ class OCRService:
                 focus_values.append(self.compute_focus_measure(cell))
 
         # Aggregate focus measures (e.g., using max, mean, or median)
-        aggregated_focus = np.min(focus_values)
+        aggregated_focus = np.mean(focus_values)
         return aggregated_focus
 
     def blur_detection(self,image: np.ndarray, threshold: float, grid_size: int = 5) -> bool:
@@ -163,7 +163,7 @@ class OCRService:
         
         dst = self.contrast(dst)
 
-        if (self.blur_detection(dst,150) == "Blurry"):
+        if (self.blur_detection(dst,600) == "Blurry"):
             return {"detail":"Gambar blur, kirim ulang gambar"}
         
         dst = Image.fromarray(dst)
