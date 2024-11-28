@@ -11,7 +11,8 @@ import os
 
 class OCRService:
 
-    def __init__(self, model_segment, model_genai):
+    def __init__(self, model_segment, model_fotokopi, model_genai):
+        self.model_fotokopi = model_fotokopi
         self.model_segment = model_segment
         self.model_genai = model_genai
 
@@ -155,6 +156,11 @@ class OCRService:
     
         if (res_segment[0].masks == None):
             return {"detail":"Gambar bukan KTP"}
+        
+        res_fotokopi = self.model_fotokopi.predict(source=img, save=False, task = "classify", show=False, conf=0.8)
+        if res_fotokopi[0].probs.top1 == 0:
+            return {"detail":"Gambar merupakan fotokopi KTP"}
+
         masks = res_segment[0].masks.xy
         mask_array = np.array(masks, dtype=np.int32)
         mask_array = mask_array.reshape((-1, 1, 2))  # Reshape for OpenCV

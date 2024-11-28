@@ -11,6 +11,7 @@ from ultralytics import YOLO
 
 
 model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\KTP_Segmentation.pt')
+model_fotokopi = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\best (7).pt')
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\OCR-KTP\OCRR\OCR-KTP\OCR-KTP-Refactored\credentials.json'
 sft_tuning_job = sft.SupervisedTuningJob("projects/67912531469/locations/us-central1/tuningJobs/6663904508663300096")
@@ -21,7 +22,7 @@ load_dotenv()
 app = FastAPI()
 API_KEY = os.getenv("API_KEY")
 
-ocr_service = OCRService(model_segment,tuned_model)
+ocr_service = OCRService(model_segment, model_fotokopi,tuned_model)
 ocr_command = OCRCommand(ocr_service=ocr_service)
 
 @app.post("/extract_text/")
