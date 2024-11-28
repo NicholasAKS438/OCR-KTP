@@ -187,6 +187,7 @@ class OCRService:
         [image_file,os.getenv("PROMPT")]
         )
         text = result.text
+        print(text)
         #Buat function formatting
         text = self.format_text(text)
         
