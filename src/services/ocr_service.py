@@ -111,6 +111,7 @@ class OCRService:
         if len(approx_quad) != 4:
             print("Failed to approximate to quadrilateral; current approximation has", len(approx_quad), "points.")
         else:
+            print("a")
             array_img = four_point_transform(array_img, approx_quad.reshape(4, 2))
         return array_img
     
@@ -168,7 +169,7 @@ class OCRService:
         
         dst = self.contrast(dst)
 
-        if (self.blur_detection(dst,600) == "Blurry"):
+        if (self.blur_detection(dst,200) == "Blurry"):
             return {"detail":"Gambar blur, kirim ulang gambar"}
         
         dst = Image.fromarray(dst)

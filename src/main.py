@@ -11,7 +11,7 @@ from ultralytics import YOLO
 
 
 model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\src\\KTP_Segmentation.pt')
-model_fotokopi = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\src\\model_fotokopi.pt')
+model_fotokopi = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\src\\KTP_Fotokopi.pt')
 
 load_dotenv()
 

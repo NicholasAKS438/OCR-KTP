@@ -7,55 +7,31 @@ import numpy as np
 import cv2
 import numpy as np
 from imutils.perspective import four_point_transform
-import json
 
 from dotenv import load_dotenv
 from ultralytics import YOLO
+model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\src\\KTP_Fotokopi.pt')
 
+path = "C:\\Users\\NICHOLAS\\Downloads\\KTP\\ktp"
 results = []
-model_genai = genai.GenerativeModel("gemini-1.5-flash")
+i = 1
+for filename in os.listdir(path):
+    img = Image.open(path + "\\" + filename)
+    print(filename)
+    dst = np.array(img)
+    i += 1
+    print(i)
 
-load_dotenv()
 
-app = FastAPI()
-API_KEY = os.getenv("API_KEY")
-
-genai.configure(api_key=API_KEY)
-for filename in os.listdir(".\\ktp"):
-    img = Image.open(".\\ktp\\" + filename)
-
-    result = model_genai.generate_content(
-    [img, "\n\n", """ 
-    Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
-        Tempat lahir tidak termasuk dalam tanggal lahir
-        Berikan null jika informasi teks blur atau susah diekstrak
-        NIK hanya berjumlah 16 digit, tidak lebih dan tidak kurang, pastikan tidak melakukan output angka yang duplikat
-        {
-        "NIK": "0000000000000000",
-        "Nama": "ABC",
-        "Tanggal Lahir": "01-02-2000",
-        "Alamat": {"Alamat": "ABC", "RT/RW": "001/003", "Kelurahan/Desa": "ABC", "Kecamatan": "ABC"}
-        }
-    """]
-    )
-    text = result.text
-    if (result.text[:7] == "```json"):
-        text = text[8:len(text)-4]
-    with open("sample.json", "a") as outfile:
-        json.dump({"contents": [{"role": "user", "parts": [{"fileData": {"mimeType": "image/jpeg", "fileUri": f"gs://gemini-tuning-438/ktp/{filename}"}}, {"text": """Ekstrak teks pada gambar dan identifikasi NIK, Nama, Tanggal Lahir dan Alamat yang terdiri dari Alamat, RT/RW, Kelurahan/Desa dan Kecamatan ke dalam format JSON seperti di bawah tanpa tambahan ```json```
-        Tempat lahir tidak termasuk dalam tanggal lahir
-        Berikan null jika informasi teks blur atau susah diekstrak
-        NIK hanya berjumlah 16 digit, tidak lebih dan tidak kurang, pastikan tidak melakukan output angka yang duplikat
-        {
-        "NIK": "0000000000000000",
-        "Nama": "ABC",
-        "Tanggal Lahir": "01-02-2000",
-        "Alamat": {"Alamat": "ABC", "RT/RW": "001/003", "Kelurahan/Desa": "ABC", "Kecamatan": "ABC"}
-        }"""}]}, {"role": "model", "parts": [{"text": text}]}]}, outfile)
-        outfile.write('\n')
-        
-
+    res_segment = model_segment.predict(source=img, save=False, task = "classify", show=False, conf=0.8)
     
+    if res_segment[0].probs.top1 == 1:
+        pass
 
-    
- 
+    else:
+        img = np.array(img)
+        img = Image.fromarray(img)
+        output_path = "C:\\Users\\NICHOLAS\\Downloads\\ktp-fotokopi.v2i.folder\\train\\non" +filename
+        img.save(output_path)
+        print(f"Image saved as {output_path}")
+print(results)
