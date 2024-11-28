@@ -13,4 +13,4 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 COPY ./OCR-KTP-Refactored /code/app
 
 
-CMD ["fastapi", "run", "app/main.py", "--port", "80"]
+CMD ["fastapi", "run", "app/main.py", "--port", "8080"]
