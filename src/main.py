@@ -3,7 +3,7 @@ import os
 from commands.ocr_command import OCRCommand
 from services.ocr_service import OCRService
 
-from vertexai.generative_models import GenerativeModel, Part
+from vertexai.generative_models import GenerativeModel
 from vertexai.tuning import sft
 from dotenv import load_dotenv
 from ultralytics import YOLO
