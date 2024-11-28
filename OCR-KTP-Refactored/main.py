@@ -10,8 +10,8 @@ from ultralytics import YOLO
 
 
 
-model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\KTP_Segmentation.pt')
-model_fotokopi = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\best (7).pt')
+model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\OCR-KTP-Refactored\\KTP_Segmentation.pt')
+model_fotokopi = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\OCR-KTP-Refactored\\model_fotokopi.pt')
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\OCR-KTP\OCRR\OCR-KTP\OCR-KTP-Refactored\credentials.json'
 sft_tuning_job = sft.SupervisedTuningJob("projects/67912531469/locations/us-central1/tuningJobs/6663904508663300096")
