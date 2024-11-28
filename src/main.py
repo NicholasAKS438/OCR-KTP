@@ -10,16 +10,14 @@ from ultralytics import YOLO
 
 
 
-model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\OCR-KTP-Refactored\\KTP_Segmentation.pt')
-model_fotokopi = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\OCR-KTP-Refactored\\model_fotokopi.pt')
+model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\src\\KTP_Segmentation.pt')
+model_fotokopi = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\src\\model_fotokopi.pt')
 
 load_dotenv()
 
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\OCR-KTP\OCRR\OCR-KTP\OCR-KTP-Refactored\credentials.json'
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\OCR-KTP\OCRR\OCR-KTP\src\credentials.json'
 sft_tuning_job = sft.SupervisedTuningJob(os.getenv("TUNING_JOB"))
 tuned_model = GenerativeModel(sft_tuning_job.tuned_model_endpoint_name)
-
-
 
 app = FastAPI()
 API_KEY = os.getenv("API_KEY")

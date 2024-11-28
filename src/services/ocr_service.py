@@ -10,7 +10,6 @@ from google.cloud import storage
 import os
 
 class OCRService:
-
     def __init__(self, model_segment, model_fotokopi, model_genai):
         self.model_fotokopi = model_fotokopi
         self.model_segment = model_segment
