@@ -7,12 +7,12 @@ import numpy as np
 import cv2
 import numpy as np
 from imutils.perspective import four_point_transform
+import requests
 
 from dotenv import load_dotenv
 from ultralytics import YOLO
-model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\src\\KTP_Fotokopi.pt')
-
-path = "C:\\Users\\NICHOLAS\\Downloads\\KTP\\ktp"
+url = 'http://127.0.0.1:8000/extract_text'
+path = "C:\\Users\\NICHOLAS\\Downloads\\KTP-CROP.v6-bbox_augmented2.yolov11\\valid\\images"
 results = []
 i = 1
 for filename in os.listdir(path):
@@ -22,16 +22,15 @@ for filename in os.listdir(path):
     i += 1
     print(i)
 
-
-    res_segment = model_segment.predict(source=img, save=False, task = "classify", show=False, conf=0.8)
-    
-    if res_segment[0].probs.top1 == 1:
-        pass
-
-    else:
-        img = np.array(img)
-        img = Image.fromarray(img)
-        output_path = "C:\\Users\\NICHOLAS\\Downloads\\ktp-fotokopi.v2i.folder\\train\\non" +filename
-        img.save(output_path)
-        print(f"Image saved as {output_path}")
-print(results)
+    with open(path + "\\" + filename, 'rb') as image_file:
+        # Define the files dictionary to include the image
+        files = {'file': (path + "\\" + filename, image_file, 'image/jpeg')}
+        
+        # Make the POST request with the image
+        response = requests.post(url, files=files)
+        print(response.content)
+        with open("./sample2.json", "a") as outfile:
+            print("a")
+            json.dump({"contents": [{"file": filename, "result": str(response.content)}]}, outfile)
+            outfile.write("\n")
+          
