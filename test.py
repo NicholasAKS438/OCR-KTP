@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 from ultralytics import YOLO
 
-model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\KTP_Segmentation.pt')
+model_segment = YOLO('C:\\OCR-KTP\\OCRR\\OCR-KTP\\src\\KTP_Segmentation.pt')
 model_genai = genai.GenerativeModel("gemini-1.5-flash")
 
 load_dotenv()

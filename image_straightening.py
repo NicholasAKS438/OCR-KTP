@@ -12,7 +12,7 @@ import requests
 from dotenv import load_dotenv
 from ultralytics import YOLO
 url = 'http://127.0.0.1:8000/extract_text'
-path = "C:\\Users\\NICHOLAS\\Downloads\\KTP-CROP.v6-bbox_augmented2.yolov11\\valid\\images"
+path = "C:\\Users\\NICHOLAS\\Downloads\\KTP-CROP.v1i.yolov11\\train\\images"
 results = []
 i = 1
 for filename in os.listdir(path):
@@ -29,7 +29,7 @@ for filename in os.listdir(path):
         # Make the POST request with the image
         response = requests.post(url, files=files)
         print(response.content)
-        with open("./sample2.json", "a") as outfile:
+        with open("./new.json", "a") as outfile:
             print("a")
             json.dump({"contents": [{"file": filename, "result": str(response.content)}]}, outfile)
             outfile.write("\n")

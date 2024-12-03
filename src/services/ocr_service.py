@@ -171,7 +171,6 @@ class OCRService:
 
         if (self.blur_detection(dst,200) == "Blurry"):
             return {"detail":"Gambar blur, kirim ulang gambar"}
-        
         dst = Image.fromarray(dst)
 
         gcs_filename = self.upload_to_gcs(dst, file.filename, os.getenv("BUCKET"))
@@ -182,7 +181,7 @@ class OCRService:
         image_file = Part.from_uri(
            "gs://" + os.getenv("BUCKET") + "/ktp/" + file.filename, "image/jpeg"
         )   
-
+        
         result = self.model_genai.generate_content(
         [image_file,os.getenv("PROMPT")]
         )
@@ -199,7 +198,7 @@ class OCRService:
 
     def perform_ocr(self, image):
         """Extract text from a KTP image."""
-        try:
-            return self.extract_text(image)
-        except Exception as e:
-            return {"detail" : str(e)}
+        #try:
+        return self.extract_text(image)
+        #except Exception as e:
+        #    return {"detail" : str(e)}
