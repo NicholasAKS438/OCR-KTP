@@ -73,7 +73,8 @@ def extractText(file):
  
     if (res_segment[0].masks == None):
         return {"detail":"Gambar bukan KTP"}
-    masks = res_segment[0].masks.xy
+    masks = res_segment[0].masks.xy[0]
+    print(masks)
     mask_array = np.array(masks, dtype=np.int32)
     mask_array = mask_array.reshape((-1, 1, 2))  # Reshape for OpenCV
 

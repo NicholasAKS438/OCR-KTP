@@ -161,7 +161,7 @@ class OCRService:
         if res_fotokopi[0].probs.top1 == 0:
             return {"detail":"Gambar merupakan fotokopi KTP"}
 
-        masks = res_segment[0].masks.xy
+        masks = res_segment[0].masks.xy[0]
         mask_array = np.array(masks, dtype=np.int32)
         mask_array = mask_array.reshape((-1, 1, 2))  # Reshape for OpenCV
 
@@ -198,7 +198,7 @@ class OCRService:
 
     def perform_ocr(self, image):
         """Extract text from a KTP image."""
-        #try:
-        return self.extract_text(image)
-        #except Exception as e:
-        #    return {"detail" : str(e)}
+        try:
+            return self.extract_text(image)
+        except Exception as e:
+            return {"detail" : str(e)}
