@@ -169,7 +169,7 @@ class OCRService:
         
         dst = self.contrast(dst)
 
-        if (self.blur_detection(dst,200) == "Blurry"):
+        if (self.blur_detection(dst,150) == "Blurry"):
             return {"detail":"Gambar blur, kirim ulang gambar"}
         dst = Image.fromarray(dst)
 
